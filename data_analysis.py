@@ -5,9 +5,9 @@ import certifi
 import ssl
 import geopy.geocoders
 from geopy.exc import GeocoderTimedOut
+import time
 from geopy.geocoders import Nominatim
-import geopandas as gpd
-from shapely.geometry import Point
+import plotly.express as px
 
 df = pd.read_csv("updated_PPL_gift_history.csv")
 df["Preferred ZIP"] = df["Preferred ZIP"].astype(str)
@@ -45,26 +45,33 @@ geopy.geocoders.options.default_ssl_context = ctx
 geolocator = Nominatim(scheme='https', user_agent="Test")
 latitudes = []
 longitudes = []
-for zip_code in df["Preferred ZIP"]:
+df_zip_unique = df.drop_duplicates(subset=["Preferred ZIP"])
+for zip_code in df_zip_unique["Preferred ZIP"]:
     try:
-        location = geolocator.geocode(f"{zip_code}, USA")
+        location = geolocator.geocode(f"{zip_code}, USA", timeout=30)
         if location:
             latitudes.append(location.latitude)
             longitudes.append(location.longitude)
         else:
             latitudes.append(None)
             longitudes.append(None)
+        time.sleep(1)  # give the server some time
     except GeocoderTimedOut:
         print(f"Timeout for ZIP Code {zip_code}")
         latitudes.append(None)
         longitudes.append(None)
 
-# add lat and lon to the df
-df['lat'] = latitudes
-df['lon'] = longitudes
+# map lat and lon back to zip codes
+zip_to_lat_lon = dict(zip(df_zip_unique["Preferred ZIP"], zip(latitudes, longitudes)))
+df['lat'] = df['Preferred ZIP'].map(lambda x: zip_to_lat_lon.get(x, (None, None))[0])
+df['lon'] = df['Preferred ZIP'].map(lambda x: zip_to_lat_lon.get(x, (None, None))[1])
 
-geometry = [Point(xy) for xy in zip(df['lon'], df['lat'])]
-geo_df = gpd.GeoDataFrame(df, geometry=geometry)
-geo_df.plot(marker='o', color='red', markersize=5)
-plt.title("Geospatial Distribution of Donations by ZIP Code")
-plt.show()
+fig = px.scatter_geo(df, 
+                     lat="lat", 
+                     lon="lon", 
+                     size="Gift Amount", 
+                     hover_name="Preferred ZIP", 
+                     color="Fund Description", 
+                     projection="natural earth")
+fig.update_layout(title="Geospatial Distribution of Donations")
+fig.show()
