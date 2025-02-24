@@ -1,4 +1,8 @@
 import pandas as pd
+import pgeocode
+import os
+import certifi
+os.environ['SSL_CERT_FILE'] = certifi.where()
 
 # load the CSV
 df = pd.read_csv("Anonymized-gift-history-PPL.csv")
@@ -31,6 +35,18 @@ def format_funds(fund_name):
     else:
         return fund_name
 df["Fund Description"] = df["Fund Description"].apply(format_funds)
+
+# add actual locations
+nomi = pgeocode.Nominatim('us')  # 'us' for the United States
+unique_zips = df["Preferred ZIP"].unique()
+zip_to_location = {}
+for zip_code in unique_zips:
+    location = nomi.query_postal_code(zip_code)
+    if location is not None and not location.empty:
+        zip_to_location[zip_code] = f"{location.place_name}, {location.state_code}"
+    else:
+        zip_to_location[zip_code] = "Unknown"
+df["Location"] = df["Preferred ZIP"].map(zip_to_location)
 
 # save back to CSV if needed
 df.to_csv("updated_PPL_gift_history.csv", index=False)
