@@ -1,13 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import textwrap
-
-# import certifi
-# import ssl
-# import geopy.geocoders
-# from geopy.exc import GeocoderTimedOut
-# import time
-# from geopy.geocoders import Nominatim
+import matplotlib.cm as cm
+import matplotlib.ticker as mtick
+import seaborn as sns  # for color palette
 
 df = pd.read_csv("updated_PPL_gift_history.csv")
 
@@ -22,7 +18,14 @@ zip_labels = [
     for zip_code in top_donor_zip_codes.index
 ]
 plt.figure(figsize=(10, 6))
-bars = plt.bar(zip_labels, top_donor_zip_codes.values, color="skyblue")
+
+# unique bar color for each city
+zip_locations = df_unique.set_index("Preferred ZIP")["Location"].to_dict()
+unique_cities = sorted(list(set(zip_locations.values())))
+palette = sns.color_palette("husl", len(unique_cities))
+city_colors = dict(zip(unique_cities, palette))
+bar_colors = [city_colors[zip_locations[zip_code]] for zip_code in top_donor_zip_codes.index]
+bars = plt.bar(zip_labels, top_donor_zip_codes.values, color=bar_colors)
 
 # labels and title
 plt.xlabel("ZIP Code")
@@ -35,17 +38,24 @@ plt.show()
 
 
 # zip codes with the highest average gift amount - bar chart
-# TODO: color
 zip_avg_gift = df.groupby("Preferred ZIP")["Gift Amount"].mean()
 df = df[df["Preferred ZIP"].str.isnumeric()]  # keep only numeric ZIP codes
 top_gift_zip_codes = zip_avg_gift.sort_values(ascending=False).head(10)
 zip_labels = [
     f"{zip_code}\n{df.loc[df['Preferred ZIP'] == zip_code, 'Location'].values[0]}"
-    for zip_code in top_donor_zip_codes.index
+    for zip_code in top_gift_zip_codes.index
 ]
 plt.figure(figsize=(10, 6))
-bars = plt.bar(zip_labels, top_gift_zip_codes.values, color="skyblue")
+
+# unique bar color for each city
+zip_locations = df_unique.set_index("Preferred ZIP")["Location"].to_dict()
+unique_cities = sorted(list(set(zip_locations.values())))
+city_colors = dict(zip(unique_cities, palette))
+bar_colors = [city_colors[zip_locations[zip_code]] for zip_code in top_gift_zip_codes.index]
+bars = plt.bar(zip_labels, top_gift_zip_codes.values, color=bar_colors)
+
 # labels and title
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
 plt.xlabel("ZIP Code")
 plt.ylabel("Gift Amount Mean")
 plt.title("Top 10 ZIP Codes with the Highest Average Gift Amount")
@@ -55,10 +65,10 @@ plt.grid(axis="y", linestyle="--", alpha=0.7)
 plt.show()
 
 
-# TODO: donations to each fund
+# donations to each fund
 fund_counts = df_unique["Fund Description"].value_counts()
-top_funds = fund_counts.nlargest(5)
-others_total = fund_counts.iloc[5:].sum()
+top_funds = fund_counts.nlargest(6)
+others_total = fund_counts.iloc[6:].sum()
 
 labels_and_sizes = top_funds.to_dict()
 if others_total > 0:
@@ -68,26 +78,34 @@ def wrap_labels(labels, width=15):
     return ['\n'.join(textwrap.wrap(label, width)) for label in labels]
 wrapped_labels = wrap_labels(labels_and_sizes.keys())
 
+# labels and title
 fig, ax = plt.subplots(figsize=(8, 8))
-ax.pie(
+wedges, texts, autotexts = ax.pie(
     labels_and_sizes.values(),
     labels=wrapped_labels,
     autopct='%1.1f%%',
     textprops={"fontsize": 10},
     wedgeprops={"edgecolor": "white"},
+    labeldistance=1.1,
 )
+for text in texts:
+    if text.get_text() == wrap_labels(["Annual Fund"])[0]:
+        text.set_y(text.get_position()[1] - 0.5)  # move label down
+        text.set_x(text.get_position()[0] - 0.8)  # move label left
+        text.set_horizontalalignment("right")
 plt.title("Top 5 Funds with the Highest Gift Amount", fontsize=14)
 ax.legend(labels_and_sizes.keys(), title="Funds", loc="best", fontsize=10)
 plt.axis("equal")
 plt.show()
 
 
-# TODO: funds with highest average gift amount
+# funds with highest average gift amount
 mean_per_fund = df_unique.groupby("Fund Description")["Gift Amount"].mean()
 top_funds = mean_per_fund.sort_values(ascending=False).head(10)
-
 plt.figure(figsize=(10, 6))
-top_funds.plot(kind="bar", color="skyblue")
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+top_funds.plot(kind="bar", color="mediumseagreen")
+
 # labels and title
 plt.xlabel("Fund Name")
 plt.ylabel("Mean Gift Amount ")
@@ -98,13 +116,21 @@ plt.grid(axis="y", linestyle="--", alpha=0.7)
 plt.show()
 
 
-# TODO: top 10 biggest donors
+# top 10 biggest donors
 df["Constituent ID"] = df["Constituent ID"].astype(str)
 top_donors = df.groupby("Constituent ID")["Gift Amount"].sum().nlargest(10)
-plt.bar(top_donors.index, top_donors.values, color="skyblue")
+donor_cities = df.drop_duplicates(subset=["Constituent ID"]).set_index("Constituent ID")["Location"]
+city_labels = top_donors.index.map(lambda x: f"{x}\n({donor_cities.get(x, 'Unknown')})")
+plt.figure(figsize=(12, 6))
+# colors for bars
+unique_cities = sorted(list(set(zip_locations.values())))
+palette = sns.color_palette("husl", len(unique_cities))
+city_colors = dict(zip(unique_cities, palette))
+bar_colors = [city_colors.get(donor_cities.get(donor, "Unknown"), "gray") for donor in top_donors.index]
+bars = plt.bar(city_labels, top_donors.values, color=bar_colors)
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
 
 # labels and title
-plt.figure(figsize=(12, 6))
 plt.xlabel("Constituent ID")
 plt.ylabel("Total Gift Amount")
 plt.title("Top 10 Donors")
@@ -114,8 +140,7 @@ plt.grid(axis="y", linestyle="--", alpha=0.7)
 plt.show()
 
 
-# TODO: explore donors: history of top 20 donors
-# get top 100
+# explore donors: history of top 10 donors
 df["Gift Date"] = pd.to_datetime(df["Gift Date"])
 df["Gift Amount"] = pd.to_numeric(df["Gift Amount"], errors="coerce")
 top_donors = df.groupby("Constituent ID")["Gift Amount"].sum().nlargest(10).index
@@ -125,6 +150,7 @@ df_top_grouped = df_top_grouped.sort_values(["Constituent ID", "Gift Date"])
 
 # plot donations over time
 plt.figure(figsize=(12, 6))
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
 for donor in df_top_grouped["Constituent ID"].unique():
     donor_data = df_top_grouped[df_top_grouped["Constituent ID"] == donor].copy()
     donor_data = donor_data.sort_values("Gift Date")
@@ -141,33 +167,22 @@ plt.tight_layout()
 plt.show()
 
 
-# TODO: think again campaign
+# think again campaign over time
+df["Gift Date"] = pd.to_datetime(df["Gift Date"], errors="coerce")
+df_think_again = df[df["Fund Description"] == "Think Again Capital Campaign"]
+df_ta_grouped = df_think_again.groupby("Gift Date")["Gift Amount"].sum().reset_index()
+df_ta_grouped = df_ta_grouped.set_index("Gift Date").asfreq("D", fill_value=0).reset_index()
 
+# plot donations per year
+df_ta_yearly = df_think_again.groupby(df_think_again["Gift Date"].dt.year)["Gift Amount"].sum().reset_index()
+plt.figure(figsize=(12, 6))
+plt.plot(df_ta_yearly["Gift Date"], df_ta_yearly["Gift Amount"], marker="o", linestyle="-", color="mediumseagreen")
 
-
-# # turn zip codes into locations
-# ctx = ssl._create_unverified_context(cafile=certifi.where())
-# geopy.geocoders.options.default_ssl_context = ctx
-# geolocator = Nominatim(scheme='https', user_agent="Test")
-# latitudes = []
-# longitudes = []
-# df_zip_unique = df.drop_duplicates(subset=["Preferred ZIP"])
-# for zip_code in df_zip_unique["Preferred ZIP"]:
-#     try:
-#         location = geolocator.geocode(f"{zip_code}, USA", timeout=30)
-#         if location:
-#             latitudes.append(location.latitude)
-#             longitudes.append(location.longitude)
-#         else:
-#             latitudes.append(None)
-#             longitudes.append(None)
-#         time.sleep(1)  # give the server some time
-#     except GeocoderTimedOut:
-#         print(f"Timeout for ZIP Code {zip_code}")
-#         latitudes.append(None)
-#         longitudes.append(None)
-
-# # map lat and lon back to zip codes
-# zip_to_lat_lon = dict(zip(df_zip_unique["Preferred ZIP"], zip(latitudes, longitudes)))
-# df['lat'] = df['Preferred ZIP'].map(lambda x: zip_to_lat_lon.get(x, (None, None))[0])
-# df['lon'] = df['Preferred ZIP'].map(lambda x: zip_to_lat_lon.get(x, (None, None))[1])
+# labels and title
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+plt.xlabel("Year")
+plt.ylabel("Total Donations")
+plt.title("Think Again Campaign - Yearly Donations")
+plt.xticks(df_ta_yearly["Gift Date"])  # Show each year
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.show()
