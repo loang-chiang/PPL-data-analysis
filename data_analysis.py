@@ -116,6 +116,23 @@ plt.grid(axis="y", linestyle="--", alpha=0.7)
 plt.show()
 
 
+# funds with highest average gift amount (leave out major gifts)
+mean_per_fund = df_unique.groupby("Fund Description")["Gift Amount"].mean()
+top_funds = mean_per_fund.sort_values(ascending=False).head(11)[1:]
+plt.figure(figsize=(10, 6))
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+top_funds.plot(kind="bar", color="mediumseagreen")
+
+# labels and title
+plt.xlabel("Fund Name")
+plt.ylabel("Mean Gift Amount ")
+plt.title("Top 10 Funds with the Highest Average Gift Amount")
+plt.xticks(rotation=45, ha="right", fontsize=10) 
+plt.subplots_adjust(bottom=0.3)
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.show()
+
+
 # top 10 biggest donors
 df["Constituent ID"] = df["Constituent ID"].astype(str)
 top_donors = df.groupby("Constituent ID")["Gift Amount"].sum().nlargest(10)
@@ -167,6 +184,26 @@ plt.tight_layout()
 plt.show()
 
 
+# all donations over time
+df["Gift Date"] = pd.to_datetime(df["Gift Date"], errors="coerce")
+df_grouped = df.groupby("Gift Date")["Gift Amount"].sum().reset_index()
+df_grouped = df_grouped.set_index("Gift Date").asfreq("D", fill_value=0).reset_index()
+
+# plot donations per year
+df_yearly = df.groupby(df["Gift Date"].dt.year)["Gift Amount"].sum().reset_index()
+plt.figure(figsize=(12, 6))
+plt.plot(df_yearly["Gift Date"], df_yearly["Gift Amount"], marker="o", linestyle="-", color="mediumseagreen")
+
+# labels and title
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+plt.xlabel("Year")
+plt.ylabel("Total Donations")
+plt.title("Yearly Donations")
+plt.xticks(df_yearly["Gift Date"])  # Show each year
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.show()
+
+
 # think again campaign over time
 df["Gift Date"] = pd.to_datetime(df["Gift Date"], errors="coerce")
 df_think_again = df[df["Fund Description"] == "Think Again Capital Campaign"]
@@ -184,5 +221,110 @@ plt.xlabel("Year")
 plt.ylabel("Total Donations")
 plt.title("Think Again Campaign - Yearly Donations")
 plt.xticks(df_ta_yearly["Gift Date"])  # Show each year
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.show()
+
+
+# annual fund over time
+df["Gift Date"] = pd.to_datetime(df["Gift Date"], errors="coerce")
+df_fund = df[df["Fund Description"] == "Annual Fund"]
+df_grouped = df_fund.groupby("Gift Date")["Gift Amount"].sum().reset_index()
+df_grouped = df_grouped.set_index("Gift Date").asfreq("D", fill_value=0).reset_index()
+
+# plot donations per year
+df_yearly = df_fund.groupby(df_fund["Gift Date"].dt.year)["Gift Amount"].sum().reset_index()
+plt.figure(figsize=(12, 6))
+plt.plot(df_yearly["Gift Date"], df_yearly["Gift Amount"], marker="o", linestyle="-", color="mediumseagreen")
+
+# labels and title
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+plt.xlabel("Year")
+plt.ylabel("Total Donations")
+plt.title("Annual Fund - Yearly Donations")
+plt.xticks(df_yearly["Gift Date"])  # Show each year
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.show()
+
+
+# savor the story over time
+df["Gift Date"] = pd.to_datetime(df["Gift Date"], errors="coerce")
+df_fund = df[df["Fund Description"] == "Savor the Story"]
+df_grouped = df_fund.groupby("Gift Date")["Gift Amount"].sum().reset_index()
+df_grouped = df_grouped.set_index("Gift Date").asfreq("D", fill_value=0).reset_index()
+
+# plot donations per year
+df_yearly = df_fund.groupby(df_fund["Gift Date"].dt.year)["Gift Amount"].sum().reset_index()
+plt.figure(figsize=(12, 6))
+plt.plot(df_yearly["Gift Date"], df_yearly["Gift Amount"], marker="o", linestyle="-", color="mediumseagreen")
+
+# labels and title
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+plt.xlabel("Year")
+plt.ylabel("Total Donations")
+plt.title("Savor the Story Campaign - Yearly Donations")
+plt.xticks(df_yearly["Gift Date"])  # Show each year
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.show()
+
+
+# gala event over time
+df["Gift Date"] = pd.to_datetime(df["Gift Date"], errors="coerce")
+df_fund = df[df["Fund Description"] == "Gala Event"]
+df_grouped = df_fund.groupby("Gift Date")["Gift Amount"].sum().reset_index()
+df_grouped = df_grouped.set_index("Gift Date").asfreq("D", fill_value=0).reset_index()
+
+# plot donations per year
+df_yearly = df_fund.groupby(df_fund["Gift Date"].dt.year)["Gift Amount"].sum().reset_index()
+plt.figure(figsize=(12, 6))
+plt.plot(df_yearly["Gift Date"], df_yearly["Gift Amount"], marker="o", linestyle="-", color="mediumseagreen")
+
+# labels and title
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+plt.xlabel("Year")
+plt.ylabel("Total Donations")
+plt.title("Gala Event - Yearly Donations")
+plt.xticks(df_yearly["Gift Date"])  # Show each year
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.show()
+
+
+# RI family literacy initiative over time
+df["Gift Date"] = pd.to_datetime(df["Gift Date"], errors="coerce")
+df_fund = df[df["Fund Description"] == "RI Family Literacy Initiative"]
+df_grouped = df_fund.groupby("Gift Date")["Gift Amount"].sum().reset_index()
+df_grouped = df_grouped.set_index("Gift Date").asfreq("D", fill_value=0).reset_index()
+
+# plot donations per year
+df_yearly = df_fund.groupby(df_fund["Gift Date"].dt.year)["Gift Amount"].sum().reset_index()
+plt.figure(figsize=(12, 6))
+plt.plot(df_yearly["Gift Date"], df_yearly["Gift Amount"], marker="o", linestyle="-", color="mediumseagreen")
+
+# labels and title
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+plt.xlabel("Year")
+plt.ylabel("Total Donations")
+plt.title("RI Family Literacy Initiative - Yearly Donations")
+plt.xticks(df_yearly["Gift Date"])  # Show each year
+plt.grid(axis="y", linestyle="--", alpha=0.7)
+plt.show()
+
+
+# children's annual fund over time
+df["Gift Date"] = pd.to_datetime(df["Gift Date"], errors="coerce")
+df_fund = df[df["Fund Description"] == "Children's Annual Fund"]
+df_grouped = df_fund.groupby("Gift Date")["Gift Amount"].sum().reset_index()
+df_grouped = df_grouped.set_index("Gift Date").asfreq("D", fill_value=0).reset_index()
+
+# plot donations per year
+df_ta_yearly = df_fund.groupby(df_fund["Gift Date"].dt.year)["Gift Amount"].sum().reset_index()
+plt.figure(figsize=(12, 6))
+plt.plot(df_yearly["Gift Date"], df_yearly["Gift Amount"], marker="o", linestyle="-", color="mediumseagreen")
+
+# labels and title
+plt.gca().yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f"${x:,.0f}"))
+plt.xlabel("Year")
+plt.ylabel("Total Donations")
+plt.title("Children's Annual Fund - Yearly Donations")
+plt.xticks(df_yearly["Gift Date"])  # Show each year
 plt.grid(axis="y", linestyle="--", alpha=0.7)
 plt.show()
